@@ -20,7 +20,7 @@ class simple_thread_pool {
 
 
 public: 
-    explicit simple_thread_pool(std::size_t count);
+    explicit simple_thread_pool(std::size_t count = std::thread::hardware_concurrency());
     ~simple_thread_pool();
     
     simple_thread_pool(const simple_thread_pool& other) = delete;

@@ -15,7 +15,7 @@ void dummy_work() {
     std::cout << std::this_thread::get_id() <<  " thread done...." << std::endl;
 }
 
-simple_thread_pool::simple_thread_pool(std::size_t count = std::thread::hardware_concurrency()) {
+simple_thread_pool::simple_thread_pool(std::size_t count) {
     if(count == 0) throw std::invalid_argument("Number of threads must be > 0"); 
 
     // Init threads

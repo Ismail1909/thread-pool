@@ -18,6 +18,9 @@ add_executable(
 )
 target_include_directories(simple_thread_pool_tests PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include) # to include simple_thread_pool header
 
+#target_compile_options(simple_thread_pool_tests PUBLIC -fsanitize=thread)
+#target_link_options(simple_thread_pool_tests PUBLIC -fsanitize=thread)
+
 target_link_libraries(
   simple_thread_pool_tests
   GTest::gtest_main
