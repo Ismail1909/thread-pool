@@ -7,6 +7,7 @@
 #include <thread>
 #include <mutex>
 #include <condition_variable> 
+#include <vector>
 
 class simple_thread_pool {
     using work_item_t = std::function<void(void)>;
@@ -17,7 +18,9 @@ class simple_thread_pool {
     std::condition_variable m_cv;
     std::queue<work_item_ptr_t> m_work_queue;
     threads_t m_threads;
+    bool m_stopped;
 
+    void stop();
 
 public: 
     explicit simple_thread_pool(std::size_t count = std::thread::hardware_concurrency());

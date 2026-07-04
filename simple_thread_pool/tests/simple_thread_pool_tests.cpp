@@ -201,3 +201,21 @@ TEST(SimpleThreadPoolTest, ParallelVectorReduction)
 
     EXPECT_EQ(parallel_sum, expected);
 }
+
+TEST(SimpleThreadPoolTest, BasicStressTest) {
+    constexpr std::size_t num_threads{8};
+    constexpr std::size_t num_tasks{1'000'000};
+    std::atomic<std::size_t> counter{0};
+
+    {
+        simple_thread_pool thread_pool{num_threads};
+
+        for(int i = 0 ; i < num_tasks ; ++i) {
+            thread_pool.do_work([&counter](){
+                ++counter;
+            });
+        }
+    }
+
+    EXPECT_EQ(counter.load(), num_tasks);
+}
