@@ -41,7 +41,17 @@ simple_thread_pool::simple_thread_pool(std::size_t count) {
                         m_work_queue.pop();
                     }
                     // do work
-                    (*work)();
+                    try {
+                        (*work)();
+                    }
+                    catch(const std::exception& ex) {
+                        std::unique_lock cerr_lock{cout_guard};
+                        std::cerr << "Task threw exception: " << ex.what() << std::endl;
+                    }
+                    catch(...) {
+                        std::unique_lock cerr_lock{cout_guard};
+                        std::cerr << "Task threw unknown exception" << std::endl;
+                    }
                 }
         });
     }
