@@ -20,7 +20,8 @@ FetchContent_MakeAvailable(googletest)
 enable_testing()
 
 # Include subprojects
-add_subdirectory(simple_thread_pool)
+#add_subdirectory(simple_thread_pool)
+add_subdirectory(advanced_thread_pool)
 
 
 # Add tester main console
@@ -32,5 +33,5 @@ add_executable(
 target_link_libraries(
     thread_pool_tester
     PRIVATE
-    simple_thread_pool
+    advanced_thread_pool
 )

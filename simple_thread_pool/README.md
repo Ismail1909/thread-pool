@@ -40,6 +40,18 @@ The implementation uses:
 - `std::mutex` to protect the task queue
 - `std::condition_variable` to wake workers when new work arrives
 
+## Logical flow
+
+1. A thread pool is created with a specified number of worker threads.
+2. Work items are submitted to the pool using `do_work`.
+3. Each work item is added to a task queue with is shared among the worker threads.
+4. Worker threads continuously check the task queue for new work.
+5. When new work is available, a worker thread picks it up and executes it.
+6. The destructor ensures all workers finish their current tasks before stopping.
+
+## Limitations
+- Since the thread share the same task queue, that leads to contention & contention leads to more synchroinzation overhead which degrades performance.
+
 ## Files
 
 - [include/simple_thread_pool.h](include/simple_thread_pool.h) - class declaration
