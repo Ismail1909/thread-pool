@@ -17,14 +17,11 @@ auto task_queue::try_push(work_item_t work_item) -> bool {
         return false;
     }
 
-    // Create work unique pointer.
-    work_item_ptr_t work_item_ptr = std::make_unique<work_item_t>(work_item);
-
     // try to lock the queue & add to it
     std::unique_lock<std::mutex> lck{m_mutex, std::try_to_lock};
     if(!lck) return false;
 
-    m_work_queue.push(std::move(work_item_ptr));
+    m_work_queue.push(std::make_unique<work_item_t>(work_item));
     return true;
 }
 
@@ -53,13 +50,10 @@ auto task_queue::push(work_item_t work_item) -> void {
         return;
     }
 
-    // Create work unique pointer.
-    work_item_ptr_t work_item_ptr = std::make_unique<work_item_t>(work_item);
-
     // try to lock the queue & add to it
     {
         std::unique_lock<std::mutex> lck{m_mutex};
-        m_work_queue.push(std::move(work_item_ptr));
+        m_work_queue.push(std::make_unique<work_item_t>(work_item));
     }
     m_cv.notify_one();
 }
@@ -83,5 +77,5 @@ auto task_queue::pop(work_item_ptr_t &work_item_ptr) -> bool {
 
 auto task_queue::done() -> void {
     m_stopped = true;
-    m_cv.notify_all();
+    m_cv.notify_one();
 }

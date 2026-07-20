@@ -3,6 +3,7 @@
 
 #include <thread>
 #include <vector>
+#include <atomic>
 
 #include "task_queue.h"
 
@@ -13,7 +14,7 @@ class advanced_thread_pool {
     task_queues_t m_task_queues;
     threads_t m_threads;
     std::size_t m_no_of_threads;
-    std::size_t m_current_index;
+    std::atomic<std::size_t> m_current_index;
     bool m_stopped;
 
     auto stop() -> void;

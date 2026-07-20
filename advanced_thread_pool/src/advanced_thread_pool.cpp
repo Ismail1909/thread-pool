@@ -8,11 +8,13 @@ std::mutex cout_guard;
 
 inline auto advanced_thread_pool::stop() -> void {
     m_stopped = true;
-    for(std::size_t i  = 0 ; i < m_no_of_threads ; ++i) {
-        m_task_queues[i].done();
+    for(auto& task_queue : m_task_queues) {
+        task_queue.done();
+    }
 
-        if(m_threads[i].joinable()) {
-            m_threads[i].join();
+    for(auto&  thread : m_threads ) {
+        if(thread.joinable()) {
+            thread.join();
         }
     }
 }
@@ -64,7 +66,7 @@ auto advanced_thread_pool::do_work(work_item_t work_item) -> void {
     auto index = (m_current_index++) % m_no_of_threads;
 
     for(std::size_t i = 0 ; i < m_no_of_threads ; ++i) {
-        if(m_task_queues[(index+1) % m_no_of_threads].try_push(work_item)) return;
+        if(m_task_queues[(index + i) % m_no_of_threads].try_push(work_item)) return;
     }
     m_task_queues[index].push(work_item);
 }
