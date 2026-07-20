@@ -2,43 +2,86 @@
 
 #include <stdexcept>
 
-task_queue::task_queue(std::size_t count) : m_work_queues{count}, m_locks{count}, m_no_of_queues{count} {
-    if(count == 0) throw std::invalid_argument("Number of queue must be > 0"); 
+task_queue::task_queue() : m_work_queue{}, m_stopped{false} {
+     
 }
 
-auto task_queue::try_add(std::size_t index, work_item_t work_item) -> bool {
-    if(index > m_no_of_queues -1) return false;
-
+auto task_queue::try_push(work_item_t work_item) -> bool {
     // Reject null function
     if(!work_item) {
         throw std::invalid_argument{"Function cannot be null"};
     }
 
+    // Don't accept new work if stopped.
+    if(m_stopped) {
+        return false;
+    }
+
     // Create work unique pointer.
     work_item_ptr_t work_item_ptr = std::make_unique<work_item_t>(work_item);
 
-    // lock the queue & add to it
-    std::unique_lock<std::mutex> lck{m_locks[index]};
-    m_work_queues[index].push(std::move(work_item_ptr));
+    // try to lock the queue & add to it
+    std::unique_lock<std::mutex> lck{m_mutex, std::try_to_lock};
+    if(!lck) return false;
+
+    m_work_queue.push(std::move(work_item_ptr));
     return true;
 }
 
-auto task_queue::try_get(std::size_t index) -> work_item_ptr_t {
-    if(index > m_no_of_queues -1) return {};
+auto task_queue::try_pop(work_item_ptr_t& work_item_ptr) -> bool {
     
-    // If queue is busy return immediately with null
-    if(!m_locks[index].try_lock()) return {};
-
-    // If queue is empty,  unlock & return null
-    if(m_work_queues[index].empty()) {
-        m_locks[index].unlock();
-        return {};
-    }
+    // If queue is busy return immediately with false
+    std::unique_lock<std::mutex> lck{m_mutex, std::try_to_lock};
+    
+    if(!lck || m_work_queue.empty()) return false;
 
     // Fetch the work_item then unlock and return.
-    work_item_ptr_t work_item_ptr = std::move(m_work_queues[index].front());
-    m_work_queues[index].pop();
-    m_locks[index].unlock();
+    work_item_ptr = std::move(m_work_queue.front());
+    m_work_queue.pop();
     
-    return std::move(work_item_ptr);
+    return true;
+}
+
+auto task_queue::push(work_item_t work_item) -> void {
+    // Reject null function
+    if(!work_item) {
+        throw std::invalid_argument{"Function cannot be null"};
+    }
+
+    // Don't accept new work if stopped.
+    if(m_stopped) {
+        return;
+    }
+
+    // Create work unique pointer.
+    work_item_ptr_t work_item_ptr = std::make_unique<work_item_t>(work_item);
+
+    // try to lock the queue & add to it
+    {
+        std::unique_lock<std::mutex> lck{m_mutex};
+        m_work_queue.push(std::move(work_item_ptr));
+    }
+    m_cv.notify_one();
+}
+
+auto task_queue::pop(work_item_ptr_t &work_item_ptr) -> bool {
+    {
+        std::unique_lock<std::mutex> lck{m_mutex};
+        m_cv.wait(lck, [this]() {
+            return m_stopped || !m_work_queue.empty();
+        });
+
+        if(m_work_queue.empty()) return false;
+
+        // Fetch the work_item then unlock and return.
+        work_item_ptr = std::move(m_work_queue.front());
+        m_work_queue.pop();
+    }
+
+    return true;
+}
+
+auto task_queue::done() -> void {
+    m_stopped = true;
+    m_cv.notify_all();
 }

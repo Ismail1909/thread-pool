@@ -20,7 +20,7 @@ FetchContent_MakeAvailable(googletest)
 enable_testing()
 
 # Include subprojects
-#add_subdirectory(simple_thread_pool)
+add_subdirectory(simple_thread_pool)
 add_subdirectory(advanced_thread_pool)
 
 

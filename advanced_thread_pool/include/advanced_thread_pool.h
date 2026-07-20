@@ -8,8 +8,9 @@
 
 class advanced_thread_pool {
     using threads_t = std::vector<std::thread>;
+    using task_queues_t = std::vector<task_queue>;
 
-    task_queue m_task_queue;
+    task_queues_t m_task_queues;
     threads_t m_threads;
     std::size_t m_no_of_threads;
     std::size_t m_current_index;
@@ -25,7 +26,7 @@ public:
 
     advanced_thread_pool(advanced_thread_pool&& other) = delete;
 
-    auto do_work(work_item_t work_item) -> bool;
+    auto do_work(work_item_t work_item) -> void;
 };
 
 #endif // ADVANCED_THREAD_POOL_H
