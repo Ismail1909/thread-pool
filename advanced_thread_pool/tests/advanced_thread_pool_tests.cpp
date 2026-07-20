@@ -46,6 +46,7 @@ TEST(AdvancedThreadPoolTest, DestructionWaitsForWorkersToExit) {
     EXPECT_EQ(f.wait_for(0ms), std::future_status::ready);
 }
 
+// This test hangs forever, TODO: investigate the issue.
 TEST(AdvancedThreadPoolTest, DISABLED_SingleTaskTest) {
     std::promise<int> value_promise;
     std::future<int> result = value_promise.get_future();
