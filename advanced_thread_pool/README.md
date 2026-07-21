@@ -63,3 +63,7 @@ The implementation uses:
 - [tests/advanced_thread_pool_tests.cpp](tests/advanced_thread_pool_tests.cpp) - tests
 
 ## Testing
+
+## Notes
+
+The performance has considerably worsen after I added `m_cv.notify_one();` in `try_push` due to the added syncronization overhead, need to investigate & workaround this problem.
