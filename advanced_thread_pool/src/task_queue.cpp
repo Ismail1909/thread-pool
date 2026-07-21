@@ -18,10 +18,14 @@ auto task_queue::try_push(work_item_t work_item) -> bool {
     }
 
     // try to lock the queue & add to it
-    std::unique_lock<std::mutex> lck{m_mutex, std::try_to_lock};
-    if(!lck) return false;
+    {
+        std::unique_lock<std::mutex> lck{m_mutex, std::try_to_lock};
+        if(!lck) return false;
 
-    m_work_queue.push(std::make_unique<work_item_t>(work_item));
+        m_work_queue.push(std::make_unique<work_item_t>(work_item));
+    }
+    // Notify the waiting thread.
+    m_cv.notify_one();
     return true;
 }
 
