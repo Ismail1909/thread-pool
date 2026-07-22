@@ -69,3 +69,5 @@ The implementation uses:
 The performance has considerably worsen after I added `m_cv.notify_one();` in `try_push` due to the added syncronization overhead, need to investigate & workaround this problem.
 
 I found that by running the tests with `ctest`, this caused some weird random hanging in random tests in the `advanced_thread_pool`, I don't experince this when running the tests directly with `./advanced_thread_pool_tests`, so I suspect this is a problem with `ctest` itself, but I need to investigate further. For now I removed the `m_cv.notify_one();` in `try_push` to remove the overhead.
+
+The issue resurfaced when I run the test built with `clang` and it's consistent, so I ,**sigh**, readded it back but now I have some solid base to investigate.

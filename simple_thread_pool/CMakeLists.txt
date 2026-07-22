@@ -18,7 +18,7 @@ add_executable(
 )
 target_include_directories(simple_thread_pool_tests PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include) # to include simple_thread_pool header
 
-if(UNIX AND NOT MSVC)
+if(UNIX AND NOT CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
 target_compile_options(simple_thread_pool_tests PRIVATE -fsanitize=thread -g)
 target_link_options(simple_thread_pool_tests PRIVATE -fsanitize=thread -g)
 endif()
