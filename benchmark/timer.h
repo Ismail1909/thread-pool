@@ -29,8 +29,6 @@ public:
     ~Timer() {
         stop();
     }
-
-
 };
 
 #endif /* TIMER_H */

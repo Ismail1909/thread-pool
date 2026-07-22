@@ -5,6 +5,10 @@
 
 #include <array>
 
+#define BENCHMARK(name) Timer timer##__line__{name};
+#define BENCHMARK_FUNCTION() BENCHMARK(__func__)
+
+uint32_t no_of_threads = std::thread::hardware_concurrency();
 inline constexpr uint64_t NUMBER_OF_TASKS = 1'000'000;
 
 // Prevents compiler from optimizing away the variable with no overhead.
@@ -35,104 +39,129 @@ std::array<uint64_t, DATA_SIZE> data{1};
 
 constexpr uint64_t CHUNK_SIZE = (1*1024*1024) / sizeof(uint64_t); // 1 MB
 
-int main() {
-    uint32_t no_of_threads = std::thread::hardware_concurrency();
-    std::cout << "System's no of threads: " << no_of_threads << std::endl;
+constexpr uint8_t PATTERN_SIZE = 8;
+std::array<uint32_t, PATTERN_SIZE> pattern {64, 68, 72, 76, 80, 84, 88, 92};
 
+void simple_pool_noop() {
+    BENCHMARK_FUNCTION();
+    simple_thread_pool pool{no_of_threads};
+
+    for(uint64_t i = 0 ; i < NUMBER_OF_TASKS ; ++i) {
+        pool.do_work([]() {
+            noop();
+        });
+    }
+}
+
+void advanced_pool_noop() {
+    BENCHMARK_FUNCTION();
+    advanced_thread_pool pool{no_of_threads};
+
+    for(uint64_t i = 0 ; i < NUMBER_OF_TASKS ; ++i) {
+        pool.do_work([]() {
+            noop();
+        });
+    }
+}
+
+void noop_benchmark() {
     std::cout << "## Scheduling & Synchronization Overhead ##" << std::endl;
-    {
-        Timer timer{"simple_thread_pool"};
-        simple_thread_pool pool{no_of_threads};
 
-        for(uint64_t i = 0 ; i < NUMBER_OF_TASKS ; ++i) {
-            pool.do_work([]() {
-                noop();
-            });
-        }
+    simple_pool_noop();
+    advanced_pool_noop();
+}
+
+void simple_pool_cpu_bound() { 
+    BENCHMARK_FUNCTION();
+    
+    simple_thread_pool pool{no_of_threads};
+    for(uint64_t i = 0 ; i < NUMBER_OF_TASKS ; ++i) {
+        const auto n = pattern[i % PATTERN_SIZE];
+        pool.do_work([n]() {
+            auto result = fibonacci(n);
+            do_not_optimize(result);
+        });
     }
+}
 
-    {
-        Timer timer{"advanced_thread_pool"};
-        advanced_thread_pool pool{no_of_threads};
+void advanced_pool_cpu_bound() {
+    BENCHMARK_FUNCTION();
 
-        for(uint64_t i = 0 ; i < NUMBER_OF_TASKS ; ++i) {
-            pool.do_work([]() {
-                noop();
-            });
-        }
+    advanced_thread_pool pool{no_of_threads};
+    for(uint64_t i = 0 ; i < NUMBER_OF_TASKS ; ++i) {
+        const auto n = pattern[i % PATTERN_SIZE];
+        pool.do_work([n]() {
+            auto result = fibonacci(n);
+            do_not_optimize(result);
+        });
     }
+}
 
+void cpu_bound_benchmark() {
     std::cout << "## Small CPU Bound Task ##" << std::endl;
 
-    std::array<uint32_t, 8> pattern {64, 68, 72, 76, 80, 84, 88, 92};
-    uint32_t pattern_size = pattern.size();
+    simple_pool_cpu_bound();
+    advanced_pool_cpu_bound();
+}
+
+inline uint64_t array_sum(uint64_t begin, uint64_t end) {
+    uint64_t sum = 0;
+    for (uint64_t j = begin; j < end; ++j)
+        sum += data[j];
+
+    return sum;
+}
+
+void simple_pool_memory_bound() {
+    BENCHMARK_FUNCTION();
+
+    simple_thread_pool pool{no_of_threads};
+
+    for (uint64_t i = 0; i < NUMBER_OF_TASKS; ++i)
     {
-        Timer timer{"simple_thread_pool"};
-        simple_thread_pool pool{no_of_threads};
+        const uint64_t begin = i % (DATA_SIZE - CHUNK_SIZE);
 
-        for(uint64_t i = 0 ; i < NUMBER_OF_TASKS ; ++i) {
-            const auto n = pattern[i % pattern_size];
-            pool.do_work([n]() {
-                auto result = fibonacci(n);
-                do_not_optimize(result);
-            });
-        }
+        pool.do_work([&, begin]
+        {
+            uint64_t sum = array_sum(begin, begin + CHUNK_SIZE);
+            do_not_optimize(sum);
+        });
     }
+}
 
+void advanced_pool_memory_bound() {
+    BENCHMARK_FUNCTION();
+    
+    advanced_thread_pool pool{no_of_threads};
+
+    for (uint64_t i = 0; i < NUMBER_OF_TASKS; ++i)
     {
-        Timer timer{"advanced_thread_pool"};
-        advanced_thread_pool pool{no_of_threads};
+        const uint64_t begin = i % (DATA_SIZE - CHUNK_SIZE);
 
-        for(uint64_t i = 0 ; i < NUMBER_OF_TASKS ; ++i) {
-            const auto n = pattern[i % pattern_size];
-            pool.do_work([n]() {
-                auto result = fibonacci(n);
-                do_not_optimize(result);
-            });
-        }
+        pool.do_work([&, begin]
+        {
+            uint64_t sum = array_sum(begin, begin + CHUNK_SIZE);
+            do_not_optimize(sum);
+        });
     }
+}
 
+void memory_bound_benchmark() {
     std::cout << "## Memory Bound Task ##" << std::endl;
+    
+    simple_pool_memory_bound();
+    advanced_pool_memory_bound();
+}
 
-    {
-        Timer timer{"simple_thread_pool"};
-        simple_thread_pool pool{no_of_threads};
+int main() {
+    
+    std::cout << "System's no of threads: " << no_of_threads << std::endl;
 
-        for (uint64_t i = 0; i < NUMBER_OF_TASKS; ++i)
-        {
-            const uint64_t begin = i % (DATA_SIZE - CHUNK_SIZE);
+    noop_benchmark();
+    
+    cpu_bound_benchmark();
 
-            pool.do_work([&, begin]
-            {
-                uint64_t sum = 0;
-
-                for (uint64_t j = begin; j < begin + CHUNK_SIZE; ++j)
-                    sum += data[j];
-
-                do_not_optimize(sum);
-            });
-        }
-    }
-
-    {
-        Timer timer{"advanced_thread_pool"};
-        advanced_thread_pool pool{no_of_threads};
-
-        for (uint64_t i = 0; i < NUMBER_OF_TASKS; ++i)
-        {
-            const uint64_t begin = i % (DATA_SIZE - CHUNK_SIZE);
-
-            pool.do_work([&, begin]
-            {
-                uint64_t sum = 0;
-
-                for (uint64_t j = begin; j < begin + CHUNK_SIZE; ++j)
-                    sum += data[j];
-
-                do_not_optimize(sum);
-            });
-        }
-    }
+    memory_bound_benchmark();
 
     std::cout << "## END BENCHMARK ##" << std::endl;
 }
