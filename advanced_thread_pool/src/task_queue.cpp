@@ -24,8 +24,6 @@ auto task_queue::try_push(work_item_t work_item) -> bool {
 
         m_work_queue.push(std::make_unique<work_item_t>(work_item));
     }
-    // Notify the waiting thread.
-    m_cv.notify_one();
     return true;
 }
 

@@ -4,6 +4,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(CMAKE_COLOR_DIAGNOSTICS ON)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 
 project(thread_pool LANGUAGES CXX)
@@ -33,5 +34,18 @@ add_executable(
 target_link_libraries(
     thread_pool_tester
     PRIVATE
+    advanced_thread_pool
+)
+
+# Benchmark
+add_executable(
+    thread_pool_benchmark
+    ${CMAKE_SOURCE_DIR}/benchmark/benchmark.cpp
+)
+
+target_link_libraries(
+    thread_pool_benchmark
+    PRIVATE
+    simple_thread_pool
     advanced_thread_pool
 )
