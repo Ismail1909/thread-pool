@@ -33,14 +33,14 @@ uint64_t fibonacci(uint64_t n) {
     return a;
 }
 
+constexpr uint8_t PATTERN_SIZE = 8;
+std::array<uint32_t, PATTERN_SIZE> pattern {64, 68, 72, 76, 80, 84, 88, 92};
+
 // For Data chunks processing
 constexpr uint64_t DATA_SIZE = (512*1024*1024) / sizeof(uint64_t);
 std::array<uint64_t, DATA_SIZE> data{1};
 
 constexpr uint64_t CHUNK_SIZE = (1*1024*1024) / sizeof(uint64_t); // 1 MB
-
-constexpr uint8_t PATTERN_SIZE = 8;
-std::array<uint32_t, PATTERN_SIZE> pattern {64, 68, 72, 76, 80, 84, 88, 92};
 
 inline uint64_t array_sum(uint64_t begin, uint64_t end) {
     uint64_t sum = 0;

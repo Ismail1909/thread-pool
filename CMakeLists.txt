@@ -43,7 +43,7 @@ add_executable(
     ${CMAKE_SOURCE_DIR}/benchmark/benchmark.cpp
 )
 
-# Add swift's gcd libdispatch if the build is Clang.
+# Add swift's gcd libdispatch if the build is Clang & in unix platform.
 if(UNIX AND CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
 target_link_directories(thread_pool_benchmark PRIVATE /usr/local/lib)
 
