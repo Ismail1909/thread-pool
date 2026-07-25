@@ -38,7 +38,7 @@ std::array<uint32_t, PATTERN_SIZE> pattern {64, 68, 72, 76, 80, 84, 88, 92};
 
 // For Data chunks processing
 constexpr uint64_t DATA_SIZE = (512*1024*1024) / sizeof(uint64_t);
-std::array<uint64_t, DATA_SIZE> data{1};
+std::array<uint64_t, DATA_SIZE> data{};
 
 constexpr uint64_t CHUNK_SIZE = (1*1024*1024) / sizeof(uint64_t); // 1 MB
 
@@ -197,7 +197,7 @@ void simple_pool_memory_bound() {
 
     for (uint64_t i = 0; i < NUMBER_OF_TASKS; ++i)
     {
-        const uint64_t begin = i % (DATA_SIZE - CHUNK_SIZE);
+        const uint64_t begin = (i * CHUNK_SIZE) % (DATA_SIZE - CHUNK_SIZE);
 
         pool.do_work([&, begin]
         {
@@ -233,6 +233,9 @@ void memory_bound_benchmark() {
 }
 
 int main() {
+
+    // fill the whole array with ones.
+    data.fill(1);
     
     std::cout << "System's no of threads: " << no_of_threads << std::endl;
 

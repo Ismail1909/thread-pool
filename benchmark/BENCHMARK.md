@@ -266,26 +266,64 @@ The components of the inline assembly are:
 Tested on `Intel(R) Core(TM) i5-4460  CPU @ 3.20GHz   3.20 GHz` with `4` threads.
 
 ```
+## START BENCHMARK ##
 System's no of threads: 4
 ## Scheduling & Synchronization Overhead ##
-simple_pool_noop duration: 32224677 microsecs (32224.7 ms)
-advanced_pool_noop duration: 15447055 microsecs (15447.1 ms)
-gcd_dispatch_noop duration: 685656 microsecs (685.656 ms)
+simple_pool_noop duration: 26911995 microsecs (26912 ms)
+advanced_pool_noop duration: 17666325 microsecs (17666.3 ms)
+gcd_dispatch_noop duration: 726314 microsecs (726.314 ms)
 ## Small CPU Bound Task ##
-simple_pool_cpu_bound duration: 24983726 microsecs (24983.7 ms)
-advanced_pool_cpu_bound duration: 14117910 microsecs (14117.9 ms)
-gcd_dispatch_cpu_bound duration: 1239796 microsecs (1239.8 ms)
+simple_pool_cpu_bound duration: 18775230 microsecs (18775.2 ms)
+advanced_pool_cpu_bound duration: 17366240 microsecs (17366.2 ms)
+gcd_dispatch_cpu_bound duration: 1801702 microsecs (1801.7 ms)
 ## Memory Bound Task ##
-simple_pool_memory_bound duration: 30873566 microsecs (30873.6 ms)
-advanced_pool_memory_bound duration: 28259462 microsecs (28259.5 ms)
-gcd_dispatch_memory_bound duration: 28414654 microsecs (28414.7 ms)
+simple_pool_memory_bound duration: 103861758 microsecs (103862 ms)
+advanced_pool_memory_bound duration: 23690920 microsecs (23690.9 ms)
+gcd_dispatch_memory_bound duration: 23577699 microsecs (23577.7 ms)
 ## END BENCHMARK ##
 ```
 
 ## Notes on Results
 
-The results obviously show the GCD library superiority. Aside from that, the advanced thread pool is significantly faster than the simple thread pool as the advanced one has multiple queues, task stealing which reduces contention and synchronization overhead. The simple thread pool has a single queue and uses a mutex to synchronize access to the queue, which introduces contention and overhead when multiple threads try to access the queue simultaneously.
+#1 The results obviously show the GCD library superiority. Aside from that, the advanced thread pool is significantly faster than the simple thread pool as the advanced one has multiple queues, task stealing which reduces contention and synchronization overhead. The simple thread pool has a single queue and uses a mutex to synchronize access to the queue, which introduces contention and overhead when multiple threads try to access the queue simultaneously.
 
-The results are expected as the logic dictates except for the memory bound task where the performances of the three libraries is very close, I don't have a clear explanation for that, I suspect maybe the methodology is not logically valid enough, I need to rethink the method to confirm the results.
+#2 The results are expected as the logic dictates except for the memory bound task where the performances of the three libraries is very close, I don't have a clear explanation for that, I suspect maybe the methodology is not logically valid enough, I need to rethink the method to confirm the results.
+
+#3 On #2, My original intention was for each task to process a unique 1 MB chunk of the input data so that every worker thread continuously fetched new data from DRAM. However, the benchmark contained the following bug:
+
+
+```cpp
+const uint64_t begin = i % (DATA_SIZE - CHUNK_SIZE);
+```
+
+Instead of assigning each task a different chunk, this only shifted the starting position by **8 bytes** (the size of a `uint64_t`) between consecutive tasks. As a result, a large number of tasks operated on nearly identical memory regions.
+
+This significantly changed the benchmark characteristics. Once the first core loaded a cache line from DRAM, the same cache line was already available in the shared last-level cache (L3). Subsequent cores reading the overlapping regions could obtain the data directly from cache instead of accessing DRAM again.
+
+Consequently, the benchmark no longer stressed memory bandwidth as intended. Since most memory accesses became cache hits, the primary remaining cost was the synchronization overhead of each thread pool implementation, which explains why all three implementations produced very similar results.
+
+```
+## Memory Bound Task ##
+simple_pool_memory_bound duration: 30873566 microsecs (30873.6 ms)
+advanced_pool_memory_bound duration: 28259462 microsecs (28259.5 ms)
+gcd_dispatch_memory_bound duration: 28414654 microsecs (28414.7 ms)
+```
+
+Now when I fixed the code as I intended, with this change, each worker thread continuously processes different regions of the input array. Because there is almost no cache reuse between concurrently executing tasks, nearly every cache line must be fetched from DRAM. This creates a genuinely memory-bandwidth-bound workload.
+
+Under these conditions, the differences between thread pool implementations become much more apparent. A shared task queue introduces significantly more synchronization and cache-coherency overhead than implementations using per-thread queues with work stealing, resulting in a substantial performance gap.
+
+The Fix:
+```cpp
+const uint64_t begin = (i * CHUNK_SIZE) % (DATA_SIZE - CHUNK_SIZE);
+```
+
+The Output:
+```
+## Memory Bound Task ##
+simple_pool_memory_bound duration: 127366912 microsecs (127367 ms)
+advanced_pool_memory_bound duration: 24825852 microsecs (24825.9 ms)
+gcd_dispatch_memory_bound duration: 24397706 microsecs (24397.7 ms)
+```
 
 I need to run the benchmark on other devices and think about other metrics later on.
