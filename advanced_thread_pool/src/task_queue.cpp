@@ -6,7 +6,7 @@ task_queue::task_queue() : m_work_queue{}, m_stopped{false} {
      
 }
 
-auto task_queue::try_push(work_item_t work_item) -> bool {
+auto task_queue::try_push(work_item_t& work_item) -> bool {
     // Reject null function
     if(!work_item) {
         throw std::invalid_argument{"Function cannot be null"};
@@ -22,7 +22,7 @@ auto task_queue::try_push(work_item_t work_item) -> bool {
         std::unique_lock<std::mutex> lck{m_mutex, std::try_to_lock};
         if(!lck) return false;
 
-        m_work_queue.push(std::make_unique<work_item_t>(work_item));
+        m_work_queue.push(std::make_unique<work_item_t>(std::move(work_item)));
     }
     m_cv.notify_one();
     
@@ -43,7 +43,7 @@ auto task_queue::try_pop(work_item_ptr_t& work_item_ptr) -> bool {
     return true;
 }
 
-auto task_queue::push(work_item_t work_item) -> void {
+auto task_queue::push(work_item_t& work_item) -> void {
     // Reject null function
     if(!work_item) {
         throw std::invalid_argument{"Function cannot be null"};
@@ -57,7 +57,7 @@ auto task_queue::push(work_item_t work_item) -> void {
     // try to lock the queue & add to it
     {
         std::unique_lock<std::mutex> lck{m_mutex};
-        m_work_queue.push(std::make_unique<work_item_t>(work_item));
+        m_work_queue.push(std::make_unique<work_item_t>(std::move(work_item)));
     }
     m_cv.notify_one();
 }

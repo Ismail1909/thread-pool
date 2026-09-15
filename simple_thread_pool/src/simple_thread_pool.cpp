@@ -97,8 +97,6 @@ void simple_thread_pool::do_work(work_item_t work_item)
         throw std::invalid_argument{"Function cannot be null"};
     }
 
-    // Create work unique pointer.
-    work_item_ptr_t work_item_ptr = std::make_unique<work_item_t>(work_item);
     // Lock queue and push work item to it.
     {
         std::unique_lock<std::mutex> lck{m_lock_queue};
@@ -106,7 +104,7 @@ void simple_thread_pool::do_work(work_item_t work_item)
         if(m_stopped) {
             return;
         }
-        m_work_queue.push(std::move(work_item_ptr));
+        m_work_queue.push(std::make_unique<work_item_t>(std::move(work_item)));
     }
     // Unlock queue
 

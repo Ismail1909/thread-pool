@@ -25,10 +25,10 @@ public:
     task_queue(const task_queue& other) = delete;
     task_queue(task_queue&& other) = delete;
 
-    auto try_push(work_item_t work_item) -> bool;
+    auto try_push(work_item_t& work_item) -> bool;
     auto try_pop(work_item_ptr_t& work_item_ptr) -> bool;
 
-    auto push(work_item_t work_item) -> void;
+    auto push(work_item_t& work_item) -> void;
     auto pop(work_item_ptr_t& work_item_ptr) -> bool;
 
     auto done() -> void;
