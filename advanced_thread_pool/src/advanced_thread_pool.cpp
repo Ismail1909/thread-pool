@@ -62,7 +62,7 @@ advanced_thread_pool::~advanced_thread_pool() {
     stop();
 }
 
-auto advanced_thread_pool::do_work(work_item_t work_item) -> void {
+auto advanced_thread_pool::do_work(std::function<void(void)> work_item) -> void {
     auto index = (m_current_index++) % m_no_of_threads;
 
     for(std::size_t i = 0 ; i < m_no_of_threads ; ++i) {

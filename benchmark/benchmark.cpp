@@ -180,11 +180,22 @@ void advanced_pool_cpu_bound() {
     }
 }
 
+void advanced_pool_func_cpu_bound() {
+    BENCHMARK_FUNCTION();
+
+    advanced_thread_pool pool{no_of_threads};
+    for(uint64_t i = 0 ; i < NUMBER_OF_TASKS ; ++i) {
+        const auto n = pattern[i % PATTERN_SIZE];
+        pool.do_func(fibonacci, n);
+    }    
+}
+
 void cpu_bound_benchmark() {
     std::cout << "## Small CPU Bound Task ##" << std::endl;
 
     simple_pool_cpu_bound();
     advanced_pool_cpu_bound();
+    advanced_pool_func_cpu_bound();
     GCD_DISPATCH_CPU_BOUND();
 }
 
@@ -224,11 +235,25 @@ void advanced_pool_memory_bound() {
     }
 }
 
+void advanced_pool_func_memory_bound() {
+    BENCHMARK_FUNCTION();
+    
+    advanced_thread_pool pool{no_of_threads};
+
+    for (uint64_t i = 0; i < NUMBER_OF_TASKS; ++i)
+    {
+        const uint64_t begin = i % (DATA_SIZE - CHUNK_SIZE);
+
+        pool.do_func(array_sum, begin, begin + CHUNK_SIZE);
+    }
+}
+
 void memory_bound_benchmark() {
     std::cout << "## Memory Bound Task ##" << std::endl;
     
     simple_pool_memory_bound();
     advanced_pool_memory_bound();
+    advanced_pool_func_memory_bound();
     GCD_DISPATCH_MEM_BOUND();
 }
 

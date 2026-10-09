@@ -60,6 +60,64 @@ TEST(AdvancedThreadPoolTest, SingleTaskTest) {
     EXPECT_EQ(result.get(), 1);
 }
 
+int add(int a, int b) {
+    return a + b;
+}
+
+TEST(AdvancedThreadPoolTest, BasicFuncTest) {
+    advanced_thread_pool thread_pool;
+
+    auto result = thread_pool.do_func(add, 1, 2);
+    EXPECT_EQ(3, result.get());
+}
+
+TEST(AdvancedThreadPoolTest, LambdaFuncTest) {
+    advanced_thread_pool thread_pool;
+
+    auto add = [](int a, int b) {
+        return a + b;
+    };
+
+    auto result = thread_pool.do_func(add, 1, 2);
+    EXPECT_EQ(3, result.get());
+}
+
+TEST(AdvancedThreadPoolTest, LRefFuncTest) {
+    advanced_thread_pool thread_pool;
+
+    int x = 10;
+    auto increment = [](int& a) {
+        ++a;
+        return a;
+    };
+
+    auto result = thread_pool.do_func(increment, x);
+    EXPECT_EQ(x, result.get());
+}
+
+TEST(AdvancedThreadPoolTest, RRefFuncTest) {
+    advanced_thread_pool thread_pool;
+
+    auto get = [](int&& a) {
+        int x = a;
+        return x;
+    };
+
+    auto result = thread_pool.do_func(get, 10);
+    EXPECT_EQ(10, result.get());
+}
+
+TEST(AdvancedThreadPoolTest, MoveFuncTest) {
+    advanced_thread_pool thread_pool;
+
+    auto get_from_ptr = [](std::unique_ptr<int> x) {
+        return *x;
+    };
+
+    auto result = thread_pool.do_func(get_from_ptr, std::make_unique<int>(10));
+    EXPECT_EQ(10, result.get());
+}
+
 TEST(AdvancedThreadPoolTest, BasicMultiThreadTest) {
     constexpr int num_threads{8};
     std::atomic<int> counter{0};
